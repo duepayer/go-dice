@@ -40,16 +40,27 @@ type Farkle struct {
 	playerCount  int
 	players      []Player
 	diceNumber   int
-	WinningScore int
-	Winner       Player
+	winningScore int
+	winner       Player
 }
 
 // Player - a place to store player meta
 type Player struct {
-	name        string
-	score       Score
-	tempScore   Score
-	rollHistory []Score
+	name               string
+	score              Score
+	tempScore          Score
+	scoringRollHistory []Score
+}
+
+// RollTally - Tally roll
+type RollTally struct {
+	ones        int
+	fives       int
+	pairs       []int
+	triplets    []int
+	quadruplets []int
+	quintuplets []int
+	sextuplets  []int
 }
 
 // Score - all score related meta
@@ -58,10 +69,38 @@ type Score struct {
 	Dice  []int
 }
 
-// RollScore - tally and calculate all possible scoring combinations
-// and return an array of mapped scores
-func RollScore(count map[int]int) []Score {
-	scores := make([]Score, 15)
+// CountRoll - compile each die number count
+func CountRoll(roll []int) map[int]int {
+	rc := map[int]int{ // Map literal
+		1: 0,
+		2: 0,
+		3: 0,
+		4: 0,
+		5: 0,
+		6: 0,
+	}
+	for _, die := range roll {
+		switch die {
+		case 1:
+			rc[1] = rc[1] + 1
+		case 2:
+			rc[2] = rc[2] + 1
+		case 3:
+			rc[3] = rc[3] + 1
+		case 4:
+			rc[4] = rc[4] + 1
+		case 5:
+			rc[5] = rc[5] + 1
+		case 6:
+			rc[6] = rc[6] + 1
+		}
+	}
+	return rc
+}
+
+// TallyScoringCombinations - tally all possible scoring combinations
+func TallyScoringCombinations(count map[int]int) RollTally {
+	var rt RollTally
 
 	// Remove non-scoring die from count map
 	for k, i := range count {
@@ -69,46 +108,62 @@ func RollScore(count map[int]int) []Score {
 			delete(count, k)
 		}
 	}
+	fmt.Printf("Dice count after removing zero count dice:\n %v \n\n", count)
 
-	if len(count) == 6 {
-		d := []int{1, 2, 3, 4, 5, 6}
-		s := Score{
-			Score: 3000,
-			Dice:  d,
-		}
-		scores = append(scores, s)
-	} else {
-		// Separate counts into singles, pairs, triplets and quadruplets
-		ones := make([]int, 1)
-		fives := make([]int, 1)
-		pairs := make([]int, 3)
-		triplets := make([]int, 2)
-		quadruplets := make([]int, 1)
-		quintuplets := make([]int, 1)
-		sextuplets := make([]int, 1)
-
-		for k, i := range count {
-			switch i {
-			case 1:
-				if k == 1 {
-					ones = append(ones, i)
-				} else if k == 5 {
-					fives = append(fives, i)
-				}
-			case 2:
-				pairs = append(pairs, k)
-			case 3:
-				triplets = append(triplets, k)
-			case 4:
-				quadruplets = append(quadruplets, k)
-			case 5:
-				quintuplets = append(quintuplets, k)
-			case 6:
-				sextuplets = append(sextuplets, k)
+	for k, i := range count {
+		switch i {
+		case 1:
+			if k == 1 {
+				rt.ones = i
+			} else if k == 5 {
+				rt.fives = i
 			}
+		case 2:
+			if k == 1 {
+				rt.ones = i
+			} else if k == 5 {
+				rt.fives = i
+			}
+			rt.pairs = append(rt.pairs, k)
+		case 3:
+			if k == 1 {
+				rt.ones = i
+			} else if k == 5 {
+				rt.fives = i
+			}
+			rt.triplets = append(rt.triplets, k)
+		case 4:
+			if k == 1 {
+				rt.ones = i
+			} else if k == 5 {
+				rt.fives = i
+			}
+			rt.quadruplets = append(rt.quadruplets, k)
+		case 5:
+			if k == 1 {
+				rt.ones = i
+			} else if k == 5 {
+				rt.fives = i
+			}
+			rt.quintuplets = append(rt.quintuplets, k)
+		case 6:
+			if k == 1 {
+				rt.ones = i
+			} else if k == 5 {
+				rt.fives = i
+			}
+			rt.sextuplets = append(rt.sextuplets, k)
 		}
 	}
-	return scores
+	return rt
+}
+
+// ScoreRoll - tally and calculate all possible scoring combinations
+// and return an array of mapped scores
+func ScoreRoll(rt RollTally) Score {
+	var score Score
+
+	return score
 }
 
 func main() {
@@ -120,7 +175,7 @@ func main() {
 	}
 	fmt.Printf("Number of Dice: %v\n", numOfDice)
 	roll := dice.RollDice(numOfDice)
-	rc := dice.RollCount(roll)
 	fmt.Println(roll)
-	fmt.Println(RollScore(rc))
+	cr := CountRoll(roll)
+	fmt.Printf("\n%+v", TallyScoringCombinations(cr))
 }
