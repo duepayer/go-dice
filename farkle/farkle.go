@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/duepayer/go-dice/internal/dice"
@@ -56,11 +57,12 @@ type Player struct {
 type RollTally struct {
 	ones        int
 	fives       int
+	singles     []int
 	pairs       []int
 	triplets    []int
-	quadruplets []int
-	quintuplets []int
-	sextuplets  []int
+	quadruplets int
+	quintuplets int
+	sextuplets  int
 }
 
 // Score - all score related meta
@@ -108,7 +110,7 @@ func TallyScoringCombinations(count map[int]int) RollTally {
 			delete(count, k)
 		}
 	}
-	fmt.Printf("Dice count after removing zero count dice:\n %v \n\n", count)
+	// fmt.Printf("Dice count after removing zero count dice:\n %v \n\n", count)
 
 	for k, i := range count {
 		switch i {
@@ -118,12 +120,14 @@ func TallyScoringCombinations(count map[int]int) RollTally {
 			} else if k == 5 {
 				rt.fives = i
 			}
+			rt.singles = append(rt.singles, k)
 		case 2:
 			if k == 1 {
 				rt.ones = i
 			} else if k == 5 {
 				rt.fives = i
 			}
+			rt.singles = append(rt.singles, k)
 			rt.pairs = append(rt.pairs, k)
 		case 3:
 			if k == 1 {
@@ -131,6 +135,7 @@ func TallyScoringCombinations(count map[int]int) RollTally {
 			} else if k == 5 {
 				rt.fives = i
 			}
+			rt.singles = append(rt.singles, k)
 			rt.triplets = append(rt.triplets, k)
 		case 4:
 			if k == 1 {
@@ -138,32 +143,97 @@ func TallyScoringCombinations(count map[int]int) RollTally {
 			} else if k == 5 {
 				rt.fives = i
 			}
-			rt.quadruplets = append(rt.quadruplets, k)
+			rt.singles = append(rt.singles, k)
+			rt.quadruplets = k
 		case 5:
 			if k == 1 {
 				rt.ones = i
 			} else if k == 5 {
 				rt.fives = i
 			}
-			rt.quintuplets = append(rt.quintuplets, k)
+			rt.singles = append(rt.singles, k)
+			rt.quintuplets = k
 		case 6:
 			if k == 1 {
 				rt.ones = i
 			} else if k == 5 {
 				rt.fives = i
 			}
-			rt.sextuplets = append(rt.sextuplets, k)
+			rt.singles = append(rt.singles, k)
+			rt.sextuplets = k
 		}
 	}
+	sort.Ints(rt.singles)
 	return rt
+}
+
+func scoreOnesAndFives(rt RollTally) int {
+	s := 0
+	s = s + (rt.ones * 100)
+	s = s + (rt.fives * 50)
+	return s
+}
+
+func calculateScore(rt RollTally) Score {
+	var s Score
+
+	if rt.sextuplets != 0 {
+		s.Score = 5000
+		return s
+	} else if len(rt.singles) == 6 {
+		s.Score = 3000
+		return s
+	} else if rt.quintuplets != 0 {
+		oneFiveScore := scoreOnesAndFives(rt)
+		s.Score = ((rt.quintuplets * 100) * 4) + oneFiveScore
+	} else if rt.quadruplets != 0 {
+		if rt.quadruplets == 1 {
+			s.Score = 2000
+		} else if rt.quadruplets == 5 {
+			s.Score = 1000
+		} else {
+			oneFiveScore := scoreOnesAndFives(rt)
+			s.Score = ((rt.quintuplets * 100) * 2) + oneFiveScore
+		}
+	} else if rt.triplets != nil {
+		if len(rt.triplets) == 2 {
+			for k := range rt.triplets {
+				s.Score = s.Score + (k * 100)
+				return s
+			}
+		} else {
+			if rt.triplets[0] == 1 {
+				s.Score = 1000
+			} else {
+				s.Score = (s.Score + (rt.triplets[0] * 100))
+			}
+		}
+	} else if rt.pairs != nil {
+		if len(rt.pairs) == 3 {
+			s.Score = 1500
+			return s
+		}
+	} else {
+		s.Score = 0
+	}
+
+	onesAndFivesScore := scoreOnesAndFives(rt)
+	s.Score = onesAndFivesScore
+	return s
 }
 
 // ScoreRoll - tally and calculate all possible scoring combinations
 // and return an array of mapped scores
 func ScoreRoll(rt RollTally) Score {
-	var score Score
+	var s Score
 
-	return score
+	// switch rt {
+	// case len(rt.singles) == 6:
+	// 	s.Score = 3000
+	// default:
+	// 	s.Score = 0
+	// }
+	return s
 }
 
 func main() {
@@ -177,5 +247,8 @@ func main() {
 	roll := dice.RollDice(numOfDice)
 	fmt.Println(roll)
 	cr := CountRoll(roll)
-	fmt.Printf("\n%+v", TallyScoringCombinations(cr))
+	rt := TallyScoringCombinations(cr)
+	// fmt.Printf("\n%+v", rt)
+	s := calculateScore(rt)
+	fmt.Println(s.Score)
 }
