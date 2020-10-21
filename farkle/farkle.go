@@ -186,6 +186,7 @@ func calculateScore(rt RollTally) Score {
 	} else if rt.quintuplets != 0 {
 		oneFiveScore := scoreOnesAndFives(rt)
 		s.Score = ((rt.quintuplets * 100) * 4) + oneFiveScore
+		return s
 	} else if rt.quadruplets != 0 {
 		if rt.quadruplets == 1 {
 			s.Score = 2000
@@ -197,9 +198,12 @@ func calculateScore(rt RollTally) Score {
 		}
 	} else if rt.triplets != nil {
 		if len(rt.triplets) == 2 {
-			for k := range rt.triplets {
-				s.Score = s.Score + (k * 100)
-				return s
+			for v := range rt.triplets {
+				if v != 1 {
+					s.Score += (v * 100)
+				} else {
+					s.Score += 1000
+				}
 			}
 		} else {
 			if rt.triplets[0] == 1 {
@@ -244,11 +248,14 @@ func main() {
 		panic("User Arg Parsing Error")
 	}
 	fmt.Printf("Number of Dice: %v\n", numOfDice)
+
 	roll := dice.RollDice(numOfDice)
 	fmt.Println(roll)
-	cr := CountRoll(roll)
-	rt := TallyScoringCombinations(cr)
+	// pairs := []int{1, 1, 3, 3, 4, 4}
+	// triplets := []int{1, 1, 1, 5, 5, 5}
+	// cr := CountRoll(triplets)
+	// rt := TallyScoringCombinations(cr)
 	// fmt.Printf("\n%+v", rt)
-	s := calculateScore(rt)
-	fmt.Println(s.Score)
+	// s := calculateScore(rt)
+	// fmt.Println(s.Score)
 }
